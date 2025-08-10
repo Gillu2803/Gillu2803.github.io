@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>3D Rose — Sorry</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Niconne&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg1:#82707a;
+    --bg2:#24111e;
+    --text:rgba(255,255,255,0.95);
+    --muted:rgba(255,255,255,0.75);
+    --accent:#ff4b6e;
+  }
+
+  /* page base */
+  html, body {
+    margin:0; padding:0; height:100%;
+    background: radial-gradient(circle at 50% 30%, var(--bg1), var(--bg2) 100%);
+  }
+  body {
+    overflow-y:auto; overflow-x:hidden;
+    scroll-behavior:smooth;
+  }
+
+  /* 3D canvas pinned behind */
+  canvas {
+    position:fixed; inset:0; width:100%; height:100%;
+    display:block; z-index:0; pointer-events:none;
+    /* keep rose visible but NOT by shadowing the text; just soften it slightly */
+    filter: brightness(0.85) contrast(0.95) saturate(0.95);
+  }
+
+  /* scrolling content */
+  main {
+    position:relative; z-index:1;
+    color:var(--text);
+    font-family:"Playfair Display", serif;
+    scroll-snap-type:y proximity;
+  }
+
+  section {
+    min-height:100svh; /* mobile-safe 100vh */
+    display:grid; place-items:center;
+    padding:8vh 5vw;
+    scroll-snap-align:start;
+  }
+
+  /* hero section */
+  .hero h1{
+    margin:0; text-align:center;
+    font-family:"Niconne", cursive;
+    font-size:clamp(36px, 9vw, 96px);
+    letter-spacing:.02em;
+  }
+  .hero p{
+    text-align:center; margin:16px auto 0;
+    max-width:min(92vw, 840px);
+    font-size:clamp(16px, 2.3vw, 20px);
+    color:var(--muted);
+  }
+
+  /* letter section – no opaque card, just readable typesetting */
+  .letter {
+    align-items:start;
+  }
+  .letter .wrap{
+    max-width:min(92vw, 900px);
+  }
+  .lede{
+    font-size:clamp(22px, 3.2vw, 28px);
+    line-height:1.35;
+    margin:0 0 14px 0;
+  }
+  .body{
+    font-size:clamp(16px, 2.2vw, 20px);
+    line-height:1.6;
+    margin:0;
+    /* tiny text-shadow to counter bright geometry edges without “shadowing over text” look */
+    text-shadow: 0 1px 2px rgba(0,0,0,.12);
+  }
+  .body em{ font-style:italic; }
+
+  /* outro section */
+  .outro .badge{
+    display:inline-flex; align-items:center; gap:10px;
+    padding:10px 14px; border-radius:999px;
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.16);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .outro .heart{ color:var(--accent); font-size:20px; }
+
+  /* small helper */
+  .spacer { height: 6vh; }
+</style>
+
+<!-- ESM shims + importmap for three.js -->
+<script async src="https://ga.jspm.io/npm:es-module-shims@1.6.3/dist/es-module-shims.js" crossorigin="anonymous"></script>
+<script type="importmap">
+{
+  "imports": {      
+    "three": "https://unpkg.com/three@0.150.1/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.150.1/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+
+<main>
+  <!-- HERO -->
+  <section class="hero">
+    <br>
+    <br>
+    <br>
+    <div>
+      <h1>I am sorry Yashi</h1>
+      <p>Scroll down — I am sorry about the things that have happened. I made this rose for you.</p>
+    </div>
+  </section>
+
+  <!-- LETTER -->
+  <section class="letter">
+    <div class="wrap">
+      <p class="lede">dear Chotuuu,</p>
+      <p class="body">
+        I know I have done many things wrong, sometimes knowingly and most of the time unknowingly that have hurt u in sm ways I don't seem to understand and I deep heartedly apologize. my past is not of a good guy or of a simple living person and I am embarrassed about it , of my actions , of myself and I cant run from it. I wanted to be the best version of myself for u cos I didn't want to lose u. I remember those days when u taught me to ride, the time when we were sitting on the roof, with the rain pouring all over us and the time when u proposed me. the rain and the moon has been the witness of all our memories we've made and all the time we have spent together. I also think about the time when we had our disagreements with some stuff, our misunderstandings and we overcame all of that. the time I love the most was the time when we were sitting on a rock in the abandoned area with our scooty parked some distance away and were listening "Preet Unplugged". I adore those days. I want to experience that once again with u. I don't wanna lose you.
+        <br><br>
+        So here I am, writing these words to you — not because I have to, but because I can’t keep them inside any longer. I hope that in some small way, these words reach your heart and show you how much you mean to me. I hope you can forgive my flaws and give me the chance to show you the side of me that has grown from my mistakes.
+        <br><br><em>I love you</em>
+      </p>
+      <div class="spacer"></div>
+    </div>
+  </section>
+
+  <!-- OUTRO -->
+  <section class="outro">
+    <div class="badge">
+      <span class="heart">❤</span>
+      <span>always yours</span>
+    </div>
+  </section>
+</main>
+
+<!-- Three.js scene (fixed behind) -->
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
+
+let camera, scene, renderer, controls;
+let object;
+
+const materialTemplate = new THREE.MeshStandardMaterial({
+  metalness: 0,
+  roughness: 0.8,
+  side: THREE.DoubleSide
+});
+
+init();
+animate();
+
+function init() {
+  camera = new THREE.PerspectiveCamera(33, window.innerWidth / window.innerHeight, 1, 2000);
+  camera.position.set(0, 150, 250);
+
+  scene = new THREE.Scene();
+
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.22);
+  scene.add(ambientLight);
+
+  const pointLight = new THREE.PointLight(0xffffff, 0.55);
+  pointLight.castShadow = true;
+  camera.add(pointLight);
+  scene.add(camera);
+
+  const manager = new THREE.LoadingManager(() => {
+    object.traverse(child => {
+      if (child.isMesh) {
+        const mat = materialTemplate.clone();
+        if (child.name === "rose") {
+          mat.color.set("crimson");
+        } else if (child.name === "calyx") {
+          mat.color.set("#001a14");
+        } else if (child.name === "leaf1" || child.name === "leaf2") {
+          mat.color.set("#00331b");
+        }
+        child.material = mat;
+      }
+    });
+    object.rotation.set(0, Math.PI / 1.7, 0);
+    object.scale.set(0.7, 0.7, 0.7);
+    object.position.y = -20;
+    object.castShadow = true;
+    scene.add(object);
+
+    controls.target.set(0, -20, 0);
+    controls.update();
+  });
+
+  const loader = new OBJLoader(manager);
+  loader.load(
+    "https://raw.githubusercontent.com/happy358/Images/master/Model/red_rose3.obj",
+    obj => object = obj
+  );
+
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.shadowMap.enabled = true;
+
+  // keep it *behind* content
+  renderer.domElement.style.position = "fixed";
+  renderer.domElement.style.inset = "0";
+  renderer.domElement.style.zIndex = "0";
+  renderer.domElement.style.pointerEvents = "none";
+
+  document.body.appendChild(renderer.domElement);
+
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.autoRotate = true;
+  controls.autoRotateSpeed = 2;
+  controls.enableDamping = true;
+  controls.enablePan = false;
+  controls.minPolarAngle = 0;
+  controls.maxPolarAngle = Math.PI / 2;
+  controls.target.set(0, 0, 0);
+  controls.update();
+
+  window.addEventListener("resize", onWindowResize);
+}
+
+function onWindowResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+</script>
+
+</body>
+</html>
